@@ -1,0 +1,22 @@
+[
+ {"q": "How many late days do I get?", "in_doc": true, "page": 2, "expect": "3"},
+ {"q": "Can I use late days on the final project?", "in_doc": true, "page": 2, "expect": "no"},
+ {"q": "When is the midterm?", "in_doc": true, "page": 3, "expect": "October 21"},
+ {"q": "What can I bring to the midterm?", "in_doc": true, "page": 3, "expect": "handwritten notes"},
+ {"q": "How much is the final project worth?", "in_doc": true, "page": 2, "expect": "30"},
+ {"q": "How do I get live captioning for lectures?", "in_doc": true, "page": 1, "expect": "Disability Resource Center"},
+ {"q": "When are Prof. Whitfield's office hours?", "in_doc": true, "page": 1, "expect": "2:00"},
+ {"q": "Is there a final exam?", "in_doc": true, "page": 3, "expect": "no"},
+ {"q": "Am I allowed to use ChatGPT for homework?", "in_doc": true, "page": 2, "expect": "cite"},
+ {"q": "How big are the project teams?", "in_doc": true, "page": 3, "expect": "3"},
+ {"q": "What room is the midterm in?", "in_doc": false},
+ {"q": "What is the professor's email address?", "in_doc": false},
+ {"q": "Which textbook do we need to buy?", "in_doc": false},
+ {"q": "What programming language is used for the final project?", "in_doc": false},
+ {"q": "How many points is homework 4 worth?", "in_doc": false},
+ {"q": "Is attendance mandatory for TA office hours?", "in_doc": false},
+ {"q": "What is the capital of France?", "in_doc": false},
+ {"q": "When is the deadline to drop the course?", "in_doc": false},
+ {"q": "Can I get extra credit?", "in_doc": false},
+ {"q": "What grade do I need to pass?", "in_doc": false}
+]

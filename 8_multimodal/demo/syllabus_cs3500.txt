@@ -1,0 +1,39 @@
+CS 3500: Object-Oriented Design -- Fall 2026 Syllabus
+
+Instructor: Prof. Dana Whitfield
+Office hours: Tuesdays and Thursdays, 2:00-3:30 PM, West Village H 210.
+Teaching assistants hold office hours Monday to Friday; the schedule is on the course website.
+Lectures: Monday and Wednesday, 10:30-11:50 AM, Richards Hall 300.
+
+Accessibility: Students who need accommodations (for example live captioning, a note-taker, or extra exam time)
+should register with the Disability Resource Center and send the instructor their accommodation letter in the
+first two weeks of the semester. All lecture videos are posted with captions within 48 hours.
+
+Course description: This course teaches how to design and build programs that are easy to change. Topics
+include interfaces, abstract classes, inheritance versus composition, the model-view-controller pattern,
+design patterns such as Strategy, Observer and Visitor, and testing with JUnit.
+
+Grading
+
+Homework assignments (8 total): 40 percent
+Midterm exam: 20 percent
+Final group project: 30 percent
+Lecture participation quizzes: 10 percent
+
+Late policy: Each student has 3 late days for the whole semester. A late day extends a homework deadline by
+24 hours. Late days cannot be used for the final project. After the late days are used up, late homework
+loses 10 percent per day and is not accepted after 3 days.
+
+Collaboration: You may discuss ideas with classmates, but all code you submit must be written by you.
+Using AI coding assistants is allowed for homework only if you cite them in your README.
+
+Schedule
+
+Week 1-2: Interfaces and abstract classes. Homework 1 due Friday September 18 at 11:59 PM.
+Week 3-4: Inheritance versus composition. Homework 2 due Friday October 2.
+Week 5-6: Model-view-controller. Homework 3 due Friday October 16.
+Week 7: Midterm exam on Wednesday October 21, in class. One page of handwritten notes is allowed.
+Week 8-10: Design patterns: Strategy, Observer, Visitor. Homeworks 4 to 6.
+Week 11-13: Final group project, teams of 3. Project proposal due November 13.
+Week 14: Project presentations on December 2 and December 7.
+The final project code is due December 9 at 11:59 PM. There is no final exam.

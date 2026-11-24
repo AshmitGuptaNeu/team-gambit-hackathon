@@ -1,0 +1,38 @@
+# Our additions to Attendee's own compose file. Used together with it:
+#   cd attendee && docker compose -f dev.docker-compose.yaml -f ../compose.local.yaml <command>
+# (the README's `dc` shortcut). Paths are relative to attendee/.
+services:
+  attendee-app-local:
+    environment:
+      - ALLOWED_HOSTS=localhost,attendee-app-local  # lets the bridge call the API by its container name
+      - REQUIRE_HTTPS_WEBHOOKS=false                # our webhook is plain http inside Docker
+
+  attendee-worker-local:
+    # The bot runs here. Make it trust our local certificate (make_certs.sh) so wss:// to the bridge works.
+    volumes:
+      - ../certs/container:/local-ca:ro
+    environment:
+      - SSL_CERT_FILE=/local-ca/ca-bundle.pem
+
+  liveminutes-bridge:
+    build:
+      context: ../..             # the repo root, for the shared requirements.txt
+      dockerfile: 1_ingestion/Dockerfile
+    image: liveminutes-bridge:dev
+    networks:
+      - attendee_network         # the bot reaches it as liveminutes-bridge:8775 / :8776
+    env_file: ../../.env         # the repo's .env: ATTENDEE_API_KEY, STT_BACKEND, LIVEMINUTES_LLM_* (live notes), ...
+    environment:
+      # Local models run on the host (local_models/README.md), not in this container.
+      - STT_URL=http://host.docker.internal:8777/v1/audio/transcriptions
+      - OLLAMA_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux / Colima; Docker Desktop has it already
+    volumes:
+      - ../certs:/app/certs:ro
+      - ../sessions:/app/sessions  # transcripts land in 1_ingestion/sessions/ on your computer
+    ports:
+      - "127.0.0.1:8776:8776"    # live view at http://localhost:8776/live, this computer only
+    depends_on:
+      - attendee-app-local
+    restart: unless-stopped

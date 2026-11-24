@@ -1,0 +1,33 @@
+# secrets
+.env
+*.key
+*.pem
+1_ingestion/certs/
+
+# meeting data: people's voices and transcripts
+4_qa/kb_local/
+1_ingestion/sessions/
+1_ingestion/tools/receiver/sessions/
+*.wav
+.last_bot.json
+
+# datasets (large / licensed)
+5_data/raw/
+5_data/processed/
+
+# third-party code, cloned at setup
+1_ingestion/attendee/
+
+# tooling
+.venv/
+__pycache__/
+*.pyc
+1_ingestion/tools/receiver/models/
+*.log
+.DS_Store
+
+# test caches
+.pytest_cache/
+
+# node packages (npm ci recreates them)
+node_modules/

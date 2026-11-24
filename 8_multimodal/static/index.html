@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiveMinutes Local</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%231f5fbf%22/%3E%3Crect x=%223%22 y=%225%22 width=%2210%22 height=%222%22 fill=%22white%22/%3E%3Crect x=%223%22 y=%229%22 width=%227%22 height=%222%22 fill=%22white%22/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1b1b1a; --muted: #5d5b55; --line: #dcd9d0;
+  --accent: #1f5fbf; --accent-ink: #ffffff; --soft: #e9effa; --warn-bg: #fff4d6; --warn-ink: #6b4a00;
+  --no-bg: #fde8e6; --no-ink: #8a1f14; --ok-ink: #1d6b35; --live: #c62828; --code-bg: #f1efe9;
+  --cap-size: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141413; --panel: #1e1e1c; --ink: #f0eee8; --muted: #aaa79e; --line: #34332f;
+    --accent: #7fb0ff; --accent-ink: #0d1b30; --soft: #1d2a40; --warn-bg: #3a2f12; --warn-ink: #f5d68a;
+    --no-bg: #3d1b17; --no-ink: #ffb4a8; --ok-ink: #8fd6a2; --live: #ff6b6b; --code-bg: #262624;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141413; --panel: #1e1e1c; --ink: #f0eee8; --muted: #aaa79e; --line: #34332f;
+  --accent: #7fb0ff; --accent-ink: #0d1b30; --soft: #1d2a40; --warn-bg: #3a2f12; --warn-ink: #f5d68a;
+  --no-bg: #3d1b17; --no-ink: #ffb4a8; --ok-ink: #8fd6a2; --live: #ff6b6b; --code-bg: #262624;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, select, textarea, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 12px; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 18px; margin: 0; }
+header .local { font-size: 13px; color: var(--muted); }
+header .spacer { flex: 1; }
+#status { font-size: 13px; padding: 3px 8px; border-radius: 99px; background: var(--soft); }
+#status.bad { background: var(--no-bg); color: var(--no-ink); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; padding: 16px; height: calc(100% - 58px); }
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+.panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.panel-head h2 { font-size: 15px; margin: 0 8px 0 0; }
+#captions { flex: 1; overflow-y: auto; padding: 14px 16px; font-size: var(--cap-size); line-height: 1.45; }
+#captions .line { margin: 0 0 10px; }
+#captions .ts { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 8px; }
+#captions .src { font-size: 13px; font-weight: 600; color: var(--accent); margin: 14px 0 6px; }
+#captions .empty { color: var(--muted); font-size: 16px; }
+#captions .pending { color: var(--muted); font-style: italic; }
+#captions .who { font-weight: 700; margin-right: 6px; }
+#meetRow { display: none; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+#meetRow input { flex: 1; min-width: 200px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--panel); }
+#meetBox { display: none; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--soft); }
+#meetBox .state { font-weight: 600; }
+.people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.person { font-size: 14px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); }
+.person.yes { color: var(--ok-ink); border-color: var(--ok-ink); }
+.person.no { color: var(--no-ink); border-color: var(--no-ink); }
+.meter { width: 90px; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.meter > div { height: 100%; width: 0; background: var(--ok-ink); transition: width .08s; }
+#micBtn.on { background: var(--live); color: #fff; border-color: var(--live); }
+.livedot { display: none; width: 10px; height: 10px; border-radius: 50%; background: var(--live); animation: pulse 1.2s infinite; }
+.recording .livedot { display: inline-block; }
+@keyframes pulse { 50% { opacity: .3; } }
+#thread { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 100%; }
+.msg.user { align-self: flex-end; background: var(--soft); padding: 8px 12px; border-radius: 12px 12px 2px 12px; max-width: 85%; white-space: pre-wrap; }
+.msg.bot { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--accent); margin-bottom: 6px; }
+.tag.no { background: var(--no-bg); color: var(--no-ink); }
+.tag.partial { background: var(--warn-bg); color: var(--warn-ink); }
+.notfound { background: var(--no-bg); color: var(--no-ink); padding: 8px 10px; border-radius: 8px; font-weight: 600; }
+.partialbox { background: var(--warn-bg); color: var(--warn-ink); padding: 8px 10px; border-radius: 8px; }
+.cite { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px; margin: 6px 0 0; }
+.muted { color: var(--muted); font-size: 14px; }
+pre { background: var(--code-bg); padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.diagram { overflow-x: auto; background: #fff; border-radius: 8px; padding: 10px; margin: 8px 0; border: 1px solid var(--line); }
+.diagram svg { max-width: 100%; height: auto; }
+.codeedit { width: 100%; min-height: 160px; font: 13px/1.4 ui-monospace, Menlo, monospace; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.err { color: var(--no-ink); font-size: 14px; }
+#composer { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+#chip { display: none; align-items: center; gap: 8px; background: var(--soft); padding: 4px 6px 4px 10px; border-radius: 99px; font-size: 14px; align-self: flex-start; max-width: 100%; }
+#chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#chip button { padding: 0 8px; border-radius: 99px; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.modes button { border: 0; border-radius: 0; }
+.modes button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+#input { width: 100%; resize: vertical; min-height: 52px; max-height: 200px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel); }
+.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+.hint { font-size: 13px; color: var(--muted); }
+@media (max-width: 860px) {
+  main { grid-template-columns: 1fr; height: auto; }
+  section.panel { min-height: 60vh; }
+  #captions { max-height: 45vh; }
+}
+@media (max-width: 480px) { main { padding: 10px 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>LiveMinutes Local</h1>
+  <span class="local">Captions, photos, documents and diagrams. Every model runs on this computer.</span>
+  <span class="spacer"></span>
+  <span id="status">checking models…</span>
+</header>
+<main>
+  <section class="panel" aria-label="Live captions">
+    <div class="panel-head">
+      <h2>Captions</h2>
+      <button id="micBtn" aria-pressed="false"><span class="livedot"></span> Start captions</button>
+      <div class="meter" title="Microphone level: it moves when the mic hears sound" aria-hidden="true"><div id="level"></div></div>
+      <label class="hint">Size
+        <select id="capSize" aria-label="Caption text size">
+          <option value="18">S</option><option value="22" selected>M</option><option value="28">L</option><option value="36">XL</option>
+        </select>
+      </label>
+      <button id="clearCaps" title="Clear the captions">Clear</button>
+      <button id="graphBtn" title="Decisions, tasks and deadlines from the captions, as a graph">Who's doing what</button>
+      <button id="meetBtn" title="Send the LiveMinutes bot to a Google Meet or Teams call">Join a meeting…</button>
+    </div>
+    <div id="meetRow">
+      <input id="meetLink" placeholder="Paste a Google Meet or Teams link" aria-label="Meeting link">
+      <button id="meetGo" class="primary">Send the bot</button>
+    </div>
+    <div id="meetBox" aria-live="polite"><div class="row" style="margin:0;justify-content:space-between"><div class="state" id="meetState"></div><button id="meetLeave">Remove the bot</button></div><div class="hint" id="meetHint"></div><div class="people" id="meetPeople"></div></div>
+    <div id="captions" aria-live="polite"><p class="empty">Press <b>Start captions</b> during a lecture or meeting.
+      What is said appears here, a few seconds behind. Or drop a recording (.wav, .mp3, .m4a) on the right.
+      Questions and diagrams can use these captions.</p></div>
+  </section>
+
+  <section class="panel" id="askPanel" aria-label="Ask and draw">
+    <div class="panel-head">
+      <h2>Ask &amp; draw</h2>
+      <div class="modes" role="group" aria-label="Mode">
+        <button id="modeAsk" aria-pressed="true">Ask a question</button>
+        <button id="modeDiagram" aria-pressed="false">Draw a diagram</button>
+      </div>
+    </div>
+    <div id="thread">
+      <div class="msg bot"><span class="tag">How it works</span>
+        <div><b>Attach</b> a whiteboard photo, a slide, a syllabus (PDF, .txt) or a recording, then ask about it.
+        With nothing attached, questions are answered from the captions. <b>Who's doing what</b> draws the decisions, tasks and deadlines in them as a graph.<br>
+        <b>Draw a diagram</b> turns a request ("a flowchart of the late-day policy", "a timeline of who does what")
+        into a diagram you can edit, drawn from the captions or the attached photo.</div>
+      </div>
+    </div>
+    <div id="composer">
+      <div id="chip"><span id="chipText"></span><button id="chipX" aria-label="Remove attachment">✕</button></div>
+      <textarea id="input" placeholder="Ask about the captions, a photo or a document…" aria-label="Message"></textarea>
+      <div class="row" style="margin:0">
+        <button id="attachBtn">Attach…</button>
+        <input type="file" id="file" hidden accept="image/*,.pdf,.txt,.md,audio/*,.wav,.mp3,.m4a">
+        <label class="hint" id="useCapsWrap"><input type="checkbox" id="useCaps" checked> use captions</label>
+        <span class="spacer" style="flex:1"></span>
+        <span class="hint">Enter to send · Shift+Enter new line</span>
+        <button id="send" class="primary">Send</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/mermaid.min.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// Minimal, safe formatting for model answers: escape everything, then ``` blocks, `code`, **bold**, line breaks.
+function fmt(text) {
+  const parts = String(text ?? "").split(/```(?:\w+)?\n?([\s\S]*?)```/g);
+  return parts.map((p, i) => i % 2 ? `<pre><code>${esc(p)}</code></pre>`
+    : esc(p).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>")).join("");
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  let body;
+  try { body = await r.json(); } catch { body = { error: `HTTP ${r.status}` }; }
+  if (!r.ok || body.error) throw new Error(body.error || `HTTP ${r.status}`);
+  return body;
+}
+
+// ---------------- status ----------------
+api("/api/status").then((s) => {
+  $("status").textContent = s.ok ? `local · ${s.models.join(" · ")}` : s.problem;
+  $("status").classList.toggle("bad", !s.ok);
+}).catch(() => { $("status").textContent = "server not reachable"; $("status").classList.add("bad"); });
+
+// ---------------- captions ----------------
+const captions = [];          // {t: seconds from start, text, src}
+let capStart = 0;
+const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+function renderCaptions(pending) {
+  const box = $("captions");
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  if (!captions.length && !pending) { return; }
+  let html = "", lastSrc = null;
+  for (const c of captions) {
+    if (c.src !== lastSrc) { html += `<div class="src">${esc(c.src)}</div>`; lastSrc = c.src; }
+    html += `<p class="line"><span class="ts">${fmtTime(c.t)}</span>${c.who ? `<span class="who">${esc(c.who)}:</span>` : ""}${esc(c.text)}</p>`;
+  }
+  if (pending) html += `<p class="line pending">${esc(pending)}</p>`;
+  box.innerHTML = html;
+  if (nearBottom) box.scrollTop = box.scrollHeight;
+}
+function captionsText() {
+  return captions.map((c) => `[${fmtTime(c.t)}] ${c.who ? c.who + ": " : ""}${c.text}`).join("\n");
+}
+$("capSize").onchange = (e) => document.documentElement.style.setProperty("--cap-size", e.target.value + "px");
+$("clearCaps").onclick = () => { captions.length = 0; $("captions").innerHTML = '<p class="empty">Captions cleared.</p>'; };
+
+// 16-bit mono WAV from Float32 samples
+function wav(samples, rate) {
+  const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+  const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data");
+  v.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 0x7fff, true);
+  return new Blob([buf], { type: "audio/wav" });
+}
+function downsample(samples, from, to = 16000) {
+  if (from === to) return samples;
+  const ratio = from / to, out = new Float32Array(Math.floor(samples.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const a = Math.floor(i * ratio), b = Math.min(samples.length, Math.floor((i + 1) * ratio));
+    let s = 0; for (let j = a; j < b; j++) s += samples[j]; out[i] = s / Math.max(1, b - a);
+  }
+  return out;
+}
+
+// Mic -> pieces cut at a pause (>= 2.5 s of audio and 0.5 s quiet) -> Whisper, in order. With no pause by 8 s, the
+// cut goes at the quietest moment of the last 1.5 s, not mid-word (a hard cut at 8 s turned "list" into "little").
+const mic = { ctx: null, stream: null, node: null, buf: [], rms: [], len: 0, quiet: 0, loud: false, pieceStart: 0, queue: Promise.resolve(), pending: 0 };
+const QUIET_RMS = 0.012;
+
+async function startMic() {
+  mic.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  mic.ctx = new AudioContext();
+  const src = mic.ctx.createMediaStreamSource(mic.stream);
+  const code = `class Tap extends AudioWorkletProcessor { process(i) { if (i[0][0]) this.port.postMessage(i[0][0].slice(0)); return true; } }
+                registerProcessor("tap", Tap);`;
+  await mic.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+  mic.node = new AudioWorkletNode(mic.ctx, "tap");
+  src.connect(mic.node);
+  if (!captions.length || capStart === 0) capStart = performance.now() / 1000 - (captions.at(-1)?.t || 0);
+  mic.pieceStart = performance.now() / 1000 - capStart;
+  const rate = mic.ctx.sampleRate;
+  mic.node.port.onmessage = ({ data }) => {
+    let e = 0; for (const x of data) e += x * x;
+    const rms = Math.sqrt(e / data.length);
+    $("level").style.width = Math.min(100, rms * 900) + "%";
+    mic.buf.push(data); mic.rms.push(rms); mic.len += data.length;
+    if (rms > QUIET_RMS) { mic.loud = true; mic.quiet = 0; } else mic.quiet += data.length;
+    const secs = mic.len / rate;
+    if (secs >= 2.5 && mic.quiet / rate >= 0.5) flush(rate);
+    else if (secs >= 8) {
+      const look = Math.floor(1.5 * rate / data.length);           // frames in the last 1.5 s
+      let cut = mic.rms.length - 1;
+      for (let i = mic.rms.length - look; i < mic.rms.length; i++) if (mic.rms[i] < mic.rms[cut]) cut = i;
+      flush(rate, cut + 1);
+    }
+  };
+  $("micBtn").classList.add("on"); $("micBtn").setAttribute("aria-pressed", "true");
+  $("micBtn").innerHTML = '<span class="livedot"></span> Stop captions'; $("micBtn").parentElement.classList.add("recording");
+}
+
+function flush(rate, upTo = mic.buf.length) {     // send frames [0, upTo); the rest starts the next piece
+  const sent = mic.buf.slice(0, upTo), sentRms = mic.rms.slice(0, upTo);
+  const all = new Float32Array(sent.reduce((n, b) => n + b.length, 0)); let o = 0;
+  for (const b of sent) { all.set(b, o); o += b.length; }
+  const t = mic.pieceStart, loud = sentRms.some((x) => x > QUIET_RMS);
+  mic.buf = mic.buf.slice(upTo); mic.rms = mic.rms.slice(upTo);
+  mic.len = mic.buf.reduce((n, b) => n + b.length, 0); mic.quiet = 0; mic.loud = mic.rms.some((x) => x > QUIET_RMS);
+  mic.pieceStart = t + all.length / rate;
+  if (!loud) return;                                   // silence: nothing to send
+  const piece = wav(downsample(all, rate), 16000);
+  mic.pending++; renderCaptions("…listening");
+  mic.queue = mic.queue.then(async () => {
+    try {
+      const prev = captions.filter((c) => c.src === "Microphone").at(-1)?.text || "";   // context for Whisper
+      const r = await api("/api/transcribe?prompt=" + encodeURIComponent(prev.slice(-200)), { method: "POST", body: piece });
+      if (r.text) captions.push({ t, text: r.text, src: "Microphone" });
+    } catch (e) { captions.push({ t, text: `[captions failed: ${e.message}]`, src: "Microphone" }); }
+    mic.pending--; renderCaptions(mic.pending ? "…listening" : "");
+  });
+}
+
+function stopMic() {
+  if (mic.ctx && mic.len) flush(mic.ctx.sampleRate);
+  mic.stream?.getTracks().forEach((t) => t.stop()); mic.ctx?.close(); mic.ctx = null;
+  $("level").style.width = "0";
+  $("micBtn").classList.remove("on"); $("micBtn").setAttribute("aria-pressed", "false");
+  $("micBtn").innerHTML = '<span class="livedot"></span> Start captions'; $("micBtn").parentElement.classList.remove("recording");
+}
+$("micBtn").onclick = () => mic.ctx ? stopMic() : startMic().catch((e) => addBot(`<div class="err">Microphone: ${esc(e.message)}</div>`));
+
+// ---------------- meeting bot ----------------
+// The bot (1_ingestion, in Docker) joins the call and asks everyone in chat. Nothing is transcribed until every
+// person present has said yes; a late joiner pauses it again. The page long-polls the bot's state and transcript.
+$("meetBtn").onclick = () => { const r = $("meetRow"); r.style.display = r.style.display === "flex" ? "none" : "flex"; $("meetLink").focus(); };
+$("meetLink").addEventListener("keydown", (e) => { if (e.key === "Enter") $("meetGo").click(); });
+let meeting = null;   // {id, v, t0}
+const meetingActive = () => meeting && !meeting.over;
+$("meetLeave").onclick = async () => {
+  if (!meeting) return;
+  try { await api(`/api/meeting/${meeting.id}/leave`, { method: "POST" }); } catch (e) { $("meetHint").textContent = e.message; return; }
+  meeting.over = true; $("meetState").textContent = "The bot is leaving the call"; $("meetHint").textContent = "";
+  $("meetLeave").style.display = "none";
+};
+$("meetGo").onclick = async () => {
+  const link = $("meetLink").value.trim(); if (!link) return;
+  if (meetingActive()) { $("meetHint").textContent = "A bot is already on its way. Press “Remove the bot” first to send a new one."; return; }
+  $("meetGo").disabled = true; showMeeting({ state: "sending" });
+  try {
+    const r = await api("/api/meeting/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link }) });
+    meeting = { id: r.bot_id, v: null, t0: Date.now(), over: false }; $("meetRow").style.display = "none";
+    $("meetLeave").style.display = ""; pollMeeting(r.bot_id);
+  } catch (e) { showMeeting({ state: "error", error: e.message }); }
+  $("meetGo").disabled = false;
+};
+
+function meetingText(m) {
+  const waiting = (m.people || []).filter((p) => p.present && p.decision !== "yes").map((p) => p.name);
+  if (m.state === "sending") return ["Sending the bot…", ""];
+  if (m.state === "error") return ["Couldn't send the bot", m.error];
+  if (m.declined) return ["✕ Someone said no: recording stopped", "Nothing from this meeting is kept, apart from the record of who said no."];
+  if (m.recording) return ["● Transcribing: everyone here said yes", "Captions from the call appear below, with each speaker's name."];
+  if (/ended|fatal|left/.test(m.state || "")) return ["The bot has left the call", ""];
+  if (m.state === "waiting_room") return ["In the lobby: admit “LiveMinutes” in your meeting", "It can take 20–60 seconds to show up there."];
+  if (/joined/.test(m.state || "")) return ["Asked everyone in the meeting chat for permission",
+    waiting.length ? `Waiting for a yes from: ${waiting.join(", ")}. Nothing is recorded until everyone agrees.` : "Nothing is recorded until everyone agrees."];
+  const secs = meeting ? Math.round((Date.now() - meeting.t0) / 1000) : 0;
+  return [`Joining the call… ${secs} s`, "Opening the meeting in the bot's browser can take 1–3 minutes on this Mac. Then it asks everyone in the chat before anything is recorded."];
+}
+function showMeeting(m) {
+  $("meetBox").style.display = "block";
+  const [state, hint] = meetingText(m);
+  $("meetState").textContent = state; $("meetHint").textContent = hint || "";
+  $("meetPeople").innerHTML = (m.people || []).filter((p) => p.present).map((p) => {
+    const cls = p.decision === "yes" ? "yes" : p.decision === "no" ? "no" : "";
+    const mark = p.decision === "yes" ? "✓ yes" : p.decision === "no" ? "✕ no" : "… waiting";
+    return `<span class="person ${cls}">${esc(p.name)} · ${mark}${p.vouched_by ? ` (by ${esc(p.vouched_by)})` : ""}</span>`;
+  }).join("");
+}
+async function pollMeeting(id) {
+  while (meeting && meeting.id === id) {
+    try {
+      const m = await api(`/api/meeting/${id}` + (meeting.v != null ? `?v=${meeting.v}` : ""));
+      meeting.v = m.version; showMeeting(m);
+      const lines = (m.transcript || []).map((l) => { const [mm, ss] = l.t.split(":").map(Number); return { t: mm * 60 + ss, who: l.who, text: l.text, src: "Meeting" }; });
+      const others = captions.filter((c) => c.src !== "Meeting");
+      captions.length = 0; captions.push(...others, ...lines); renderCaptions();
+      if (m.declined || /ended|fatal/.test(m.state || "")) { meeting.over = true; $("meetLeave").style.display = "none"; break; }
+      if (!m.live || m.state === "joining") await new Promise((r) => setTimeout(r, 2000));   // keeps the timer moving
+    } catch (e) { $("meetHint").textContent = e.message; await new Promise((r) => setTimeout(r, 3000)); }
+  }
+}
+
+// ---------------- thread ----------------
+const thread = $("thread");
+let mode = "ask", attachment = null, history = [];
+
+function addUser(text) { const d = document.createElement("div"); d.className = "msg user"; d.textContent = text; thread.append(d); scroll(); }
+function addBot(html) { const d = document.createElement("div"); d.className = "msg bot"; d.innerHTML = html; thread.append(d); scroll(); return d; }
+function scroll() { thread.scrollTop = thread.scrollHeight; }
+function working(label) {
+  const d = addBot(`<span class="muted">${esc(label)} <span class="secs">0</span> s</span>`), t0 = Date.now();
+  const iv = setInterval(() => { const s = d.querySelector(".secs"); if (s) s.textContent = Math.round((Date.now() - t0) / 1000); }, 1000);
+  return { done(html) { clearInterval(iv); d.innerHTML = html; scroll(); return d; } };
+}
+
+function setMode(m) {
+  mode = m;
+  $("modeAsk").setAttribute("aria-pressed", m === "ask"); $("modeDiagram").setAttribute("aria-pressed", m === "diagram");
+  $("useCapsWrap").style.display = m === "diagram" ? "" : "none";
+  $("input").placeholder = m === "diagram" ? 'What to draw, e.g. "a flowchart of what we decided"…' : "Ask about the captions, a photo or a document…";
+}
+$("modeAsk").onclick = () => setMode("ask");
+$("modeDiagram").onclick = () => setMode("diagram");
+setMode("ask");
+
+function setAttachment(a) {
+  attachment = a; history = [];
+  $("chip").style.display = a ? "inline-flex" : "none";
+  $("chipText").textContent = a ? `${a.kind === "image" ? "Photo" : "Document"}: ${a.name}` : "";
+}
+$("chipX").onclick = () => setAttachment(null);
+
+// ---------------- attach ----------------
+$("attachBtn").onclick = () => $("file").click();
+$("file").onchange = (e) => { if (e.target.files[0]) attach(e.target.files[0]); e.target.value = ""; };
+const panel = $("askPanel");
+panel.addEventListener("dragover", (e) => { e.preventDefault(); panel.classList.add("drop"); });
+panel.addEventListener("dragleave", () => panel.classList.remove("drop"));
+panel.addEventListener("drop", (e) => { e.preventDefault(); panel.classList.remove("drop"); if (e.dataTransfer.files[0]) attach(e.dataTransfer.files[0]); });
+document.addEventListener("paste", (e) => { const f = [...e.clipboardData.files].find((x) => x.type.startsWith("image/")); if (f) attach(f); });
+
+async function toWav(file) {           // any audio the browser can decode -> 16 kHz mono WAV
+  const ctx = new AudioContext();
+  const audio = await ctx.decodeAudioData(await file.arrayBuffer()); ctx.close();
+  const off = new OfflineAudioContext(1, Math.ceil(audio.duration * 16000), 16000);
+  const s = off.createBufferSource(); s.buffer = audio; s.connect(off.destination); s.start();
+  return wav((await off.startRendering()).getChannelData(0), 16000);
+}
+
+async function attach(file) {
+  const isAudio = file.type.startsWith("audio/") || /\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(file.name);
+  addUser(`📎 ${file.name}`);
+  const w = working(isAudio ? "Transcribing with Whisper…" : file.type.startsWith("image/") ? "Reading the photo…" : "Reading the document…");
+  try {
+    const form = new FormData();
+    if (isAudio) form.append("file", await toWav(file), file.name.replace(/\.\w+$/, "") + ".wav");
+    else form.append("file", file, file.name);
+    const r = await api("/api/attach", { method: "POST", body: form });
+    if (r.kind === "audio") {
+      for (const s of r.segments) captions.push({ t: s.start, text: s.text, src: `Recording: ${file.name}` });
+      renderCaptions();
+      w.done(`<span class="tag">Recording transcribed</span><div>${r.segments.length} lines from ${fmtTime(r.duration)} of audio are in the captions now. Ask about them, or draw a diagram from them.</div>`);
+    } else if (r.kind === "image") {
+      setAttachment({ id: r.id, kind: "image", name: r.name });
+      const d = r.description;
+      w.done(`<span class="tag">Photo · ${esc(d.kind)}</span><div>${fmt(d.summary)}</div>
+        ${d.text_in_image ? `<div class="muted" style="margin-top:8px">Text in the picture</div><div>${fmt(d.text_in_image)}</div>` : ""}
+        ${d.details?.length ? `<div class="muted" style="margin-top:8px">Details</div><ul>${d.details.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        <div class="hint">Ask about this photo below, or switch to <b>Draw a diagram</b> to redraw it.</div>`);
+    } else {
+      setAttachment({ id: r.id, kind: "document", name: r.name });
+      w.done(`<span class="tag">Document ready</span><div><b>${esc(r.name)}</b>: ${r.pages} page${r.pages > 1 ? "s" : ""}. Ask a question: answers come only from this document, with the page, and it says so when the answer isn't there.</div>`);
+    }
+  } catch (e) { w.done(`<div class="err">Couldn't read ${esc(file.name)}: ${esc(e.message)}</div>`); }
+}
+
+// ---------------- ask / draw ----------------
+async function send() {
+  const text = $("input").value.trim();
+  if (!text) return;
+  $("input").value = ""; addUser(text);
+  const caps = captionsText();
+  const useCaps = mode === "ask" || $("useCaps").checked;
+  const label = mode === "diagram" ? "Writing the diagram code…" : attachment?.kind === "image" ? "Looking at the photo…"
+    : attachment ? "Searching the document…" : caps ? "Searching the captions…" : "Thinking…";
+  const w = working(label);
+  try {
+    const r = await api("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, mode, attachment: attachment?.id, captions: useCaps ? caps : "", history }) });
+    if (r.kind === "diagram") return showDiagram(w, r);
+    const answer = r.answer;
+    if (r.kind === "image" || r.kind === "general") history.push({ q: text, a: answer });
+    w.done(answerHtml(r));
+  } catch (e) { w.done(`<div class="err">${esc(e.message)}</div>`); }
+}
+$("send").onclick = send;
+$("graphBtn").onclick = async () => {
+  const caps = captionsText();
+  addUser("Who's doing what?");
+  if (!caps) { addBot('<div class="notfound">No captions yet: start captions or join a meeting first.</div>'); return; }
+  const w = working("Building the graph…");
+  try {
+    const r = await api("/api/graph", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ captions: caps }) });
+    await showDiagram(w, r);
+  } catch (e) { w.done(`<div class="err">${esc(e.message)}</div>`); }
+};
+$("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+
+function answerHtml(r) {
+  if (r.kind === "general") return `<span class="tag partial">General answer · not from your captions, photos or documents</span><div>${fmt(r.answer)}</div>`;
+  if (r.kind === "image") return `<span class="tag">From the photo · ${esc(r.source)}</span><div>${fmt(r.answer)}</div>`;
+  const src = r.kind === "captions" ? "the captions" : r.source;   // "graph": the decisions & tasks graph
+  if (!r.found) return `<span class="tag no">Not found</span><div class="notfound">✕ ${esc(r.answer)}</div><div class="hint">Checked ${esc(src)}: nothing there answers this.</div>`;
+  const cites = (r.citations || []).map((c) => `<div class="cite">“${esc(c.quote)}”${r.kind === "document" ? ` (page ${c.page})` : ""}</div>`).join("");
+  if (r.directness === "partial") return `<span class="tag partial">Partly answered · ${esc(src)}</span><div class="partialbox">${fmt(r.answer)}</div>`;
+  return `<span class="tag">From ${esc(src)}</span><div>${fmt(r.answer)}</div>${cites}`;
+}
+
+// ---------------- diagrams ----------------
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default" });
+let diagramN = 0;
+
+async function showDiagram(w, r) {
+  const n = ++diagramN;
+  const ctx = r.context?.length ? ` · from the ${r.context.join(" and ")}` : "";
+  const d = w.done(`<span class="tag">${r.valid ? "Diagram" : "Diagram (needs a fix)"} · ${esc(r.diagram_type)}${esc(ctx)}</span>
+    <div><b>${esc(r.title)}</b></div><div class="diagram" id="dg${n}"></div><div class="muted">${esc(r.notes)}</div>
+    <details style="margin-top:8px"${r.valid ? "" : " open"}><summary>Mermaid code: edit it and press Redraw</summary>
+      <textarea class="codeedit" id="code${n}" spellcheck="false"></textarea>
+      <div class="err" id="err${n}"></div>
+    </details>
+    <div class="row"><button id="redraw${n}">Redraw</button><button id="copy${n}">Copy code</button><button id="svg${n}">Download SVG</button>
+      <span class="hint">${r.diagram_type === "knowledge graph" ? "built from the captions, no AI model" : r.tries > 1 ? `fixed after ${r.tries} tries` : "valid on the first try"}</span></div>`);
+  const code = d.querySelector(`#code${n}`);
+  code.value = r.code;
+  const draw = async () => {
+    const box = d.querySelector(`#dg${n}`), err = d.querySelector(`#err${n}`);
+    err.textContent = "";
+    try { const { svg } = await mermaid.render(`m${n}_${Date.now()}`, code.value); box.innerHTML = svg; }
+    catch (e) { err.textContent = "Mermaid couldn't draw this: " + (e.message || e); d.querySelector("details").open = true; }
+  };
+  d.querySelector(`#redraw${n}`).onclick = draw;
+  d.querySelector(`#copy${n}`).onclick = () => navigator.clipboard.writeText(code.value);
+  d.querySelector(`#svg${n}`).onclick = () => {
+    const svg = d.querySelector(`#dg${n} svg`); if (!svg) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([svg.outerHTML], { type: "image/svg+xml" }));
+    a.download = (r.title || "diagram").replace(/[^\w-]+/g, "_") + ".svg"; a.click();
+  };
+  await draw(); scroll();
+}
+</script>
+</body>
+</html>
